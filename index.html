@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JukeBid+Loyal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/three@0.149.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.149.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #0e0e12;
+            color: #e0e0e0;
+        }
+        .custom-shadow {
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        .song-card:hover {
+            transform: translateY(-2px);
+            transition: all 0.3s ease;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #694ea1, #9b59b6);
+        }
+        .card-bg {
+            background-color: rgba(30, 30, 40, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(81, 67, 124, 0.3);
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .glow {
+            box-shadow: 0 0 15px rgba(155, 89, 182, 0.5);
+        }
+        .neon-text {
+            text-shadow: 0 0 5px rgba(155, 89, 182, 0.8);
+        }
+        .three-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.5;
+        }
+        .btn {
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+        .glass-input {
+            background: rgba(30, 30, 40, 0.5);
+            border: 1px solid rgba(81, 67, 124, 0.3);
+            backdrop-filter: blur(5px);
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .pulse {
+            animation: pulse 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <canvas class="three-canvas"></canvas>
+    
+    <!-- Navigation Bar -->
+    <nav class="card-bg custom-shadow fixed w-full z-50">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <i class="bi bi-music-note-beamed text-2xl text-purple-400"></i>
+                <h1 class="text-xl font-bold text-purple-300 neon-text">JukeBid+Loyal</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="hidden md:inline-flex items-center space-x-2">
+                    <i class="bi bi-coin text-yellow-400"></i>
+                    <span class="font-semibold text-yellow-300">1250 points</span>
+                </span>
+                <button class="flex items-center space-x-2 bg-purple-900 bg-opacity-40 rounded-full px-3 py-1 border border-purple-500">
+                    <i class="bi bi-person-circle text-purple-300"></i>
+                    <span class="hidden md:inline text-purple-200">John Doe</span>
+                </button>
+                <button class="hidden md:flex items-center space-x-2 bg-purple-700 bg-opacity-40 rounded-full px-3 py-1 border border-purple-400">
+                    <i class="bi bi-shield-lock text-purple-300"></i>
+                    <span class="text-purple-200">Admin</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-4 pt-20">
+        <!-- Song Search and Bid Section -->
+        <div class="card-bg rounded-lg custom-shadow p-6 mb-6">
+            <input type="text" placeholder="Search for a song..." class="w-full p-4 rounded-lg glass-input mb-4 focus:border-purple-500 text-white">
+            <div class="flex flex-wrap gap-3">
+                <button class="flex-1 bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition shadow-lg btn">
+                    <i class="bi bi-music-note me-2"></i> Request for Free
+                </button>
+                <button class="flex-1 gradient-bg text-white py-3 px-4 rounded-lg hover:opacity-90 transition shadow-lg glow btn">
+                    <i class="bi bi-lightning me-2"></i> Bid with Points (Min: 100)
+                </button>
+            </div>
+            <div class="mt-3 text-center text-sm text-purple-300">
+                <p>Popular songs require higher bids - <span class="text-yellow-300">current minimum: 100 points</span></p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Now Playing Section -->
+            <div class="md:col-span-2">
+                <div class="card-bg rounded-lg custom-shadow p-6 mb-6">
+                    <h2 class="text-lg font-bold mb-4 text-purple-300 neon-text">Now Playing</h2>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-24 h-24 bg-gradient-to-br from-purple-800 to-purple-600 rounded-lg shadow-lg overflow-hidden">
+                            <img src="https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80" alt="Album cover" class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-white">Shape of You</h3>
+                            <p class="text-purple-200">Ed Sheeran</p>
+                            <p class="text-sm text-purple-300">Requested by <span class="text-yellow-300">@alex</span></p>
+                            <div class="flex items-center space-x-2 mt-2">
+                                <button class="flex items-center space-x-1 bg-red-900 bg-opacity-30 px-2 py-1 rounded-full text-red-400 hover:bg-red-900 hover:bg-opacity-50 transition">
+                                    <i class="bi bi-heart-fill"></i>
+                                    <span>128</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="hidden md:block">
+                            <div class="w-16 h-16 rounded-full bg-purple-900 bg-opacity-50 flex items-center justify-center pulse">
+                                <i class="bi bi-soundwave text-purple-300 text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Queue List -->
+                <div class="card-bg rounded-lg custom-shadow p-6">
+                    <h2 class="text-lg font-bold mb-4 text-purple-300 neon-text flex justify-between">
+                        <span>Queue</span>
+                        <span class="text-sm font-normal text-purple-400">Next song plays in: <span class="text-yellow-300">2:15</span></span>
+                    </h2>
+                    <div class="space-y-4 max-h-96 overflow-y-auto scrollbar-hide">
+                        <!-- Queue Item 1 -->
+                        <div class="song-card flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-900 hover:bg-opacity-30 border border-purple-900 border-opacity-30">
+                            <div class="w-12 h-12 bg-gradient-to-br from-purple-800 to-purple-600 rounded shadow-lg overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1614613535308-eb5fbd847f1b?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80" alt="Album cover" class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-medium text-white">Blinding Lights</h3>
+                                <p class="text-sm text-purple-300">The Weeknd</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold text-yellow-400">500 pts</p>
+                                <p class="text-sm text-purple-400">@user123</p>
+                                <div class="flex items-center justify-end space-x-1 mt-1">
+                                    <i class="bi bi-heart-fill text-red-400 text-xs"></i>
+                                    <span class="text-xs text-purple-400">42</span>
+                                </div>
+                            </div>
+                            <div class="admin-controls hidden md:block">
+                                <button class="text-red-400 hover:text-red-300 transition">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Queue Item 2 -->
+                        <div class="song-card flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-900 hover:bg-opacity-30 border border-purple-900 border-opacity-30">
+                            <div class="w-12 h-12 bg-gradient-to-br from-purple-800 to-purple-600 rounded shadow-lg overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1619983081563-430f63602796?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80" alt="Album cover" class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-medium text-white">Stay</h3>
+                                <p class="text-sm text-purple-300">The Kid LAROI, Justin Bieber</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold text-yellow-400">320 pts</p>
+                                <p class="text-sm text-purple-400">@maria55</p>
+                                <div class="flex items-center justify-end space-x-1 mt-1">
+                                    <i class="bi bi-heart-fill text-red-400 text-xs"></i>
+                                    <span class="text-xs text-purple-400">18</span>
+                                </div>
+                            </div>
+                            <div class="admin-controls hidden md:block">
+                                <button class="text-red-400 hover:text-red-300 transition">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Queue Item 3 -->
+                        <div class="song-card flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-900 hover:bg-opacity-30 border border-purple-900 border-opacity-30">
+                            <div class="w-12 h-12 bg-gradient-to-br from-purple-800 to-purple-600 rounded shadow-lg overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80" alt="Album cover" class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-medium text-white">Bad Habits</h3>
+                                <p class="text-sm text-purple-300">Ed Sheeran</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold text-yellow-400">150 pts</p>
+                                <p class="text-sm text-purple-400">@jackson</p>
+                                <div class="flex items-center justify-end space-x-1 mt-1">
+                                    <i class="bi bi-heart-fill text-red-400 text-xs"></i>
+                                    <span class="text-xs text-purple-400">7</span>
+                                </div>
+                            </div>
+                            <div class="admin-controls hidden md:block">
+                                <button class="text-red-400 hover:text-red-300 transition">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Queue Item 4 - Free Request -->
+                        <div class="song-card flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-900 hover:bg-opacity-30 border border-purple-900 border-opacity-30">
+                            <div class="w-12 h-12 bg-gradient-to-br from-purple-800 to-purple-600 rounded shadow-lg overflow-hidden">
+                                <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&q=80" alt="Album cover" class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-medium text-white">Levitating</h3>
+                                <p class="text-sm text-purple-300">Dua Lipa</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold text-purple-400">Free</p>
+                                <p class="text-sm text-purple-400">@kris_j</p>
+                                <div class="flex items-center justify-end space-x-1 mt-1">
+                                    <i class="bi bi-heart-fill text-red-400 text-xs"></i>
+                                    <span class="text-xs text-purple-400">3</span>
+                                </div>
+                            </div>
+                            <div class="admin-controls hidden md:block">
+                                <button class="text-red-400 hover:text-red-300 transition">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats and Leaderboard Section -->
+            <div class="space-y-6">
+                <div class="card-bg rounded-lg custom-shadow p-6">
+                    <h2 class="text-lg font-bold mb-4 text-purple-300 neon-text">Your Stats</h2>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-purple-200">Total Points:</span>
+                            <span class="font-semibold text-yellow-300">1,250</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-purple-200">Songs Submitted:</span>
+                            <span class="font-semibold text-purple-200">23</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-purple-200">Likes Received:</span>
+                            <span class="font-semibold text-purple-200">156</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-purple-200">Check-in Streak:</span>
+                            <div class="flex items-center">
+                                <span class="font-semibold text-purple-200 mr-2">5 days</span>
+                                <i class="bi bi-fire text-orange-400"></i>
+                            </div>
+                        </div>
+                        <button class="w-full gradient-bg text-white py-2 rounded-lg mt-2 shadow-lg glow btn">
+                            <i class="bi bi-gift me-2"></i> Claim Daily Bonus
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card-bg rounded-lg custom-shadow p-6">
+                    <h2 class="text-lg font-bold mb-4 text-purple-300 neon-text">Leaderboard</h2>
+                    <div>
+                        <div class="flex justify-between text-sm mb-2">
+                            <span class="text-purple-400">Top Bidders</span>
+                            <span class="text-purple-400">Weekly Rankings</span>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-2 rounded-lg bg-purple-900 bg-opacity-30">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-xl">🥇</span>
+                                    <span class="text-white">@sarah</span>
+                                </div>
+                                <span class="font-semibold text-yellow-300">2,450 pts</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-2 rounded-lg">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-xl">🥈</span>
+                                    <span class="text-white">@mike_dj</span>
+                                </div>
+                                <span class="font-semibold text-yellow-300">1,785 pts</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-2 rounded-lg">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-xl">🥉</span>
+                                    <span class="text-white">@john_doe</span>
+                                </div>
+                                <span class="font-semibold text-yellow-300">1,250 pts</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-2 rounded-lg">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-xl">4</span>
+                                    <span class="text-white">@lisa_m</span>
+                                </div>
+                                <span class="font-semibold text-yellow-300">980 pts</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-2 rounded-lg">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-xl">5</span>
+                                    <span class="text-white">@terry42</span>
+                                </div>
+                                <span class="font-semibold text-yellow-300">720 pts</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Initialize Three.js scene
+        function initThreeScene() {
+            const canvas = document.querySelector('.three-canvas');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({
+                canvas,
+                alpha: true,
+                antialias: true
+            });
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(0x000000, 0);
+            
+            // Add particles
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 1000;
+            
+            const positions = new Float32Array(particlesCount * 3);
+            const colors = new Float32Array(particlesCount * 3);
+            
+            for (let i = 0; i < particlesCount * 3; i += 3) {
+                // Positions
+                positions[i] = (Math.random() - 0.5) * 10;
+                positions[i+1] = (Math.random() - 0.5) * 10;
+                positions[i+2] = (Math.random() - 0.5) * 10;
+                
+                // Colors
+                colors[i] = Math.random() * 0.5 + 0.5; // R: purple-ish
+                colors[i+1] = Math.random() * 0.3; // G: low
+                colors[i+2] = Math.random() * 0.5 + 0.5; // B: purple-ish
+            }
+            
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.015,
+                transparent: true,
+                opacity: 0.8,
+                vertexColors: true,
+            });
+            
+            const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particles);
+            
+            // Audio reactive sphere
+            const sphereGeometry = new THREE.SphereGeometry(1, 32, 32);
+            const sphereMaterial = new THREE.MeshBasicMaterial({
+                color: 0x9b59b6,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.3
+            });
+            const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            scene.add(sphere);
+            
+            camera.position.z = 5;
+            
+            // Animation
+            let frame = 0;
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                // Rotate particles
+                particles.rotation.x += 0.0005;
+                particles.rotation.y += 0.0005;
+                
+                // Pulse sphere
+                const pulse = Math.sin(frame * 0.025) * 0.1 + 1;
+                sphere.scale.set(pulse, pulse, pulse);
+                sphere.rotation.y += 0.005;
+                
+                frame++;
+                
+                renderer.render(scene, camera);
+            }
+            
+            animate();
+            
+            // Resize handler
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // Initialize Three.js when document is loaded
+        document.addEventListener('DOMContentLoaded', initThreeScene);
+        
+        // Basic interaction handlers
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', function() {
+                this.classList.add('scale-95');
+                setTimeout(() => this.classList.remove('scale-95'), 100);
+            });
+        });
+
+        // Simulated song queue management
+        const songQueue = [
+            { title: "Blinding Lights", artist: "The Weeknd", points: 500, user: "user123", likes: 42 },
+            { title: "Stay", artist: "The Kid LAROI, Justin Bieber", points: 320, user: "maria55", likes: 18 },
+            { title: "Bad Habits", artist: "Ed Sheeran", points: 150, user: "jackson", likes: 7 },
+            { title: "Levitating", artist: "Dua Lipa", points: 0, user: "kris_j", likes: 3 }
+        ];
+        
+        const addToQueue = (song, points) => {
+            songQueue.push({ song, points });
+            songQueue.sort((a, b) => b.points - a.points);
+            updateQueueDisplay();
+        };
+
+        // Like functionality
+        let likes = 128;
+        document.querySelector('.bi-heart-fill').parentElement.addEventListener('click', function() {
+            likes++;
+            this.querySelector('span').textContent = likes;
+            this.classList.add('scale-110');
+            setTimeout(() => this.classList.remove('scale-110'), 100);
+        });
+        
+        // Admin controls
+        const adminButtons = document.querySelectorAll('.admin-controls button');
+        adminButtons.forEach((button, index) => {
+            button.addEventListener('click', function() {
+                // Remove the song from queue
+                this.closest('.song-card').classList.add('opacity-0');
+                setTimeout(() => {
+                    this.closest('.song-card').remove();
+                }, 300);
+            });
+        });
+
+        // Claim daily bonus
+        document.querySelector('#claimBonus') = document.querySelector('button.glow');
+        document.querySelector('#claimBonus').addEventListener('click', function() {
+            this.textContent = "Bonus Claimed! +100 points";
+            this.disabled = true;
+            this.classList.remove('gradient-bg', 'glow');
+            this.classList.add('bg-gray-600');
+            
+            // Update points
+            const pointsDisplay = document.querySelector('.bi-coin').nextElementSibling;
+            const currentPoints = parseInt(pointsDisplay.textContent);
+            pointsDisplay.textContent = (currentPoints + 100) + " points";
+        });
+        
+        // Song search functionality (simplified for demo)
+        const searchInput = document.querySelector('input[type="text"]');
+        searchInput.addEventListener('input', function() {
+            if (this.value.length > 2) {
+                // In a real app, this would trigger an API call
+                console.log("Searching for:", this.value);
+            }
+        });
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
